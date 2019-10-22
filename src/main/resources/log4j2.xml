@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<configuration status="INFO">
+    <Properties>
+        <Property name="APP_LOG_ROOT">C:\\Logs\\</Property>
+    </Properties>
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <PatternLayout pattern="%d{yyy-MM-dd HH:mm:ss.SSS} [%t] %-5level %logger{36} - %msg%n"/>
+        </Console>
+
+        <RollingRandomAccessFile name="fileLogger"
+                                 fileName="${APP_LOG_ROOT}/HFTApp.log"
+                                 filePattern="${APP_LOG_ROOT}/HFTApp.log.%d{yyyy-MM-dd}T%d{HH}00"
+                                 immediateFlush="false"
+                                 append="false">
+            <PatternLayout>
+                <Pattern>%d{yyy-MM-dd HH:mm:ss.SSS} %p %c{1.} [%t] %m %ex%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <OnStartupTriggeringPolicy/>
+            </Policies>
+            <DefaultRolloverStrategy max="20"/>
+        </RollingRandomAccessFile>
+
+        <RollingRandomAccessFile name="errorLogger"
+                                 fileName="${APP_LOG_ROOT}/HFTAppError.log"
+                                 filePattern="${APP_LOG_ROOT}/HFTAppError.log.%d{yyyy-MM-dd}T%d{HH}00"
+                                 immediateFlush="false"
+                                 append="false">
+            <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
+            <PatternLayout>
+                <Pattern>%d{yyy-MM-dd HH:mm:ss.SSS} %p %c{1.} [%t] %m %ex%n</Pattern>
+            </PatternLayout>
+            <Policies>
+                <OnStartupTriggeringPolicy/>
+            </Policies>
+            <DefaultRolloverStrategy max="20"/>
+        </RollingRandomAccessFile>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="com.sudeep" level="trace"/>
+
+        <root level="trace">
+            <appender-ref ref="Console"/>
+            <appender-ref ref="fileLogger"/>
+            <appender-ref ref="errorLogger"/>
+        </root>
+    </Loggers>
+</configuration>
