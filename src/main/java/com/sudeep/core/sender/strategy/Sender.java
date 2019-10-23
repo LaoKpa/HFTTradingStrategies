@@ -7,5 +7,5 @@ import java.util.List;
 
 public interface Sender {
 
-    Object send(List<Order> orders);
+    String send(List<Order> orders);
 }

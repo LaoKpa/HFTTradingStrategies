@@ -58,12 +58,12 @@ public class HFTApp {
         final Calendar tomorrowOpenTime = DateUtil.getTomorrowOpenTime();
         final Calendar tomorrowCloseTime = DateUtil.getTomorrowCloseTime();
         int intervalMinute = 1;
+        OrderBlotterDao orderBlotterDao = new OrderBlotterDao();
         Processor processor;
         if (processorType.equalsIgnoreCase("TWAP")) {
             processor = new TWAPProcessor(tomorrowOpenTime, tomorrowCloseTime, intervalMinute);
         } else if (processorType.equalsIgnoreCase("VWAP") || processorType.equalsIgnoreCase("VWAPMinimizeSlippage")){
             intervalMinute = 10;
-            OrderBlotterDao orderBlotterDao = new OrderBlotterDao();
             processor = new VWAPProcessor(tomorrowOpenTime, tomorrowCloseTime, orderBlotterDao, intervalMinute);
         } else {
             throw new InvalidProcessorTypeException("Currently the app only support VWAP/TWAP Processor Types.");
@@ -74,9 +74,9 @@ public class HFTApp {
 
         List<Order> orders = processor.process(order);
         Sender sender = new DelayOneSender(tomorrowOpenTime, tomorrowCloseTime, intervalMinute, broker);
-        Object response = sender.send(orders);
+        String groupId = sender.send(orders);
         if (log.isTraceEnabled()) {
-            log.trace(String.format("Response: %s", response));
+            log.trace(String.format("groupId: %s", groupId));
         }
 
         MQListener mqListener = new MQListener();
@@ -90,7 +90,7 @@ public class HFTApp {
             final List<OrderBlotter> simulatedOrderBlotterByInterval = ((VWAPProcessor) processor).getSimulatedOrderBlotterByInterval();
             final ConcurrentHashMap<String, ConcurrentHashMap<String, OrderScheduler.TaskFuturePair>> schedulerOrdersByGroupId = orderScheduler.getGroups();
             Timer timer = new Timer();
-            timer.scheduleAtFixedRate(new MinimizeSlippageManagerService(simulatedOrderBlotterByInterval, schedulerOrdersByGroupId), 3000 , 1000);
+            timer.scheduleAtFixedRate(new MinimizeSlippageManagerService(simulatedOrderBlotterByInterval, schedulerOrdersByGroupId, orderBlotterDao, groupId, intervalMinute), 3000 , 1000);
         }
 
         Thread.sleep(1000 * 5);
