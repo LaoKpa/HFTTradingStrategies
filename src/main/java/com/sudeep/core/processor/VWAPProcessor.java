@@ -86,7 +86,6 @@ public class VWAPProcessor implements Processor {
             return l;
         }, Long::sum);
 
-        logger.trace("Sum: " + sum);
         orderBlotters.sort(Comparator.comparing(OrderBlotter::getCreationTime));
 
         orderBlotters.forEach(ob -> {
@@ -109,7 +108,6 @@ public class VWAPProcessor implements Processor {
         for (int i = 0; i < slice; ++i) {
             resSum = resSum + res[i];
         }
-        logger.trace("resSum: " + resSum);
 
         return res;
     }
