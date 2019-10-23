@@ -1,7 +1,7 @@
 package com.sudeep;
 
-import com.sudeep.core.MessageQueue.CreateTaskConsumer;
-import com.sudeep.core.MessageQueue.MQListener;
+import com.sudeep.core.messageQueue.CreateTaskConsumer;
+import com.sudeep.core.messageQueue.MQListener;
 import com.sudeep.core.sender.strategy.DelayOneSender;
 import com.sudeep.core.sender.strategy.Sender;
 import com.sudeep.core.processor.Processor;
@@ -9,23 +9,24 @@ import com.sudeep.core.processor.TWAPProcessor;
 import com.sudeep.core.processor.VWAPProcessor;
 import com.sudeep.dao.OrderBlotterDao;
 import com.sudeep.domain.Entity.Order;
+import com.sudeep.domain.Entity.OrderBlotter;
 import com.sudeep.domain.Entity.OrderBuilder;
 import com.sudeep.domain.enums.OrderStatus;
 import com.sudeep.domain.enums.OrderTransactionType;
 import com.sudeep.domain.enums.OrderType;
 import com.sudeep.exception.InvalidProcessorTypeException;
+import com.sudeep.scheduler.OrderScheduler;
+import com.sudeep.service.*;
 import com.sudeep.util.DateUtil;
-import com.sudeep.service.Broker;
-import com.sudeep.service.BrokerImpl;
-import com.sudeep.service.BrokerService;
-import com.sudeep.service.BrokerServiceImpl;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.LocalDateTime;
 import java.util.Calendar;
 import java.util.List;
+import java.util.Timer;
 import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class HFTApp {
     private static final Logger log = LoggerFactory.getLogger(HFTApp.class);
@@ -60,7 +61,7 @@ public class HFTApp {
         Processor processor;
         if (processorType.equalsIgnoreCase("TWAP")) {
             processor = new TWAPProcessor(tomorrowOpenTime, tomorrowCloseTime, intervalMinute);
-        } else if (processorType.equalsIgnoreCase("VWAP")){
+        } else if (processorType.equalsIgnoreCase("VWAP") || processorType.equalsIgnoreCase("VWAPMinimizeSlippage")){
             intervalMinute = 10;
             OrderBlotterDao orderBlotterDao = new OrderBlotterDao();
             processor = new VWAPProcessor(tomorrowOpenTime, tomorrowCloseTime, orderBlotterDao, intervalMinute);
@@ -79,7 +80,18 @@ public class HFTApp {
         }
 
         MQListener mqListener = new MQListener();
-        CreateTaskConsumer createTaskConsumer = new CreateTaskConsumer(brokerService);
+        OrderScheduler orderScheduler = new OrderScheduler();
+        CreateTaskConsumer createTaskConsumer = new CreateTaskConsumer(orderScheduler, brokerService);
+
+        /*
+         * Slippage can be based on variation of expectedPrice and executedPrice but currently basing this on variation of volume profile.
+         */
+        if (processorType.equalsIgnoreCase("VWAPMinimizeSlippage")) {
+            final List<OrderBlotter> simulatedOrderBlotterByInterval = ((VWAPProcessor) processor).getSimulatedOrderBlotterByInterval();
+            final ConcurrentHashMap<String, ConcurrentHashMap<String, OrderScheduler.TaskFuturePair>> schedulerOrdersByGroupId = orderScheduler.getGroups();
+            Timer timer = new Timer();
+            timer.scheduleAtFixedRate(new MinimizeSlippageManagerService(simulatedOrderBlotterByInterval, schedulerOrdersByGroupId), 3000 , 1000);
+        }
 
         Thread.sleep(1000 * 5);
         new Thread(() -> {

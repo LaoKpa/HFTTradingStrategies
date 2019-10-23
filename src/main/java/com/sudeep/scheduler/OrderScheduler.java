@@ -16,13 +16,21 @@ public class OrderScheduler {
 
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
 
-    static class TaskFuturePair {
+    public static class TaskFuturePair {
         final OrderTask orderTask;
         final ScheduledFuture scheduledFuture;
 
         TaskFuturePair(OrderTask orderTask, ScheduledFuture scheduledFuture) {
             this.orderTask = orderTask;
             this.scheduledFuture = scheduledFuture;
+        }
+
+        public OrderTask getOrderTask() {
+            return orderTask;
+        }
+
+        public ScheduledFuture getScheduledFuture() {
+            return scheduledFuture;
         }
     }
 
@@ -34,7 +42,7 @@ public class OrderScheduler {
 
     private final ConcurrentHashMap<String, ConcurrentHashMap<String, TaskFuturePair>> groups = new ConcurrentHashMap<>();
 
-    public ScheduledFuture schedule(OrderTask orderTask, Calendar calendar) {
+    public void schedule(OrderTask orderTask, Calendar calendar) {
         randomBias(calendar);
         logger.info("[OrderScheduler.schedule." + orderTask.getId() + "] Time: " + DateUtil.calendarToString(calendar, DateUtil.datetimeFormat));
         logger.info("[OrderScheduler.schedule." + orderTask.getId() + "] Order: " + JSON.toJSONString(orderTask.getOrder()));
@@ -52,7 +60,6 @@ public class OrderScheduler {
         group.put(otsId, tfp);
 
         groups.put(groupId, group);
-        return future;
     }
 
     private ScheduledFuture schedule(Runnable task, Date startTime) {
@@ -62,5 +69,9 @@ public class OrderScheduler {
         } catch (RejectedExecutionException ex) {
             throw new RejectedExecutionException("Executor [" + executor + "] did not accept task: " + task, ex);
         }
+    }
+
+    public ConcurrentHashMap<String, ConcurrentHashMap<String, TaskFuturePair>> getGroups() {
+        return groups;
     }
 }

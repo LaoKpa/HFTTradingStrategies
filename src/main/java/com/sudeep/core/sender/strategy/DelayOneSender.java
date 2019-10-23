@@ -1,6 +1,6 @@
 package com.sudeep.core.sender.strategy;
 
-import com.sudeep.core.MessageQueue.TaskProducer;
+import com.sudeep.core.messageQueue.TaskProducer;
 import com.sudeep.domain.Entity.Order;
 import com.sudeep.domain.Entity.OrderToSend;
 import com.sudeep.service.Broker;

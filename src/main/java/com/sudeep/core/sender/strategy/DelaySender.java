@@ -10,7 +10,7 @@ import java.util.List;
 
 @Getter
 public abstract class DelaySender implements Sender {
-    private Broker broker;
+    private final Broker broker;
     private final Calendar startTime;
     private final Calendar endTime;
     private final int intervalMinute;

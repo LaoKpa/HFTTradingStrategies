@@ -22,6 +22,9 @@ public class VWAPProcessor implements Processor {
     private final OrderBlotterDao orderBlotterDao;
     private final Integer intervalMinute;
 
+    //Since currently the OrderBlotter is simulated, changing it to make it retrievable.
+    private List<OrderBlotter> simulatedOrderBlotterByInterval;
+
     public VWAPProcessor(Calendar startTime, Calendar endTime, OrderBlotterDao od, Integer intervalMinute) {
         this.orderBlotterDao = od;
         this.intervalMinute = intervalMinute;
@@ -40,8 +43,8 @@ public class VWAPProcessor implements Processor {
         logger.info("[VWAPProcessor.process] EndTime: " + DateUtil.calendarToString(endTime, DateUtil.datetimeFormat));
         logger.info("[VWAPProcessor.process] Order: " + JSON.toJSONString(order));
 
-        List<OrderBlotter> orderBlotters = orderBlotterDao.findOrderBlottersByInterval(startTime, endTime);
-        double[] percents = getPercentage(orderBlotters);
+        simulatedOrderBlotterByInterval = orderBlotterDao.findOrderBlottersByInterval(startTime, endTime);
+        double[] percents = getPercentage(simulatedOrderBlotterByInterval);
 
         List<Order> splitOrder = new ArrayList<>(percents.length);
 
@@ -109,5 +112,9 @@ public class VWAPProcessor implements Processor {
         logger.trace("resSum: " + resSum);
 
         return res;
+    }
+
+    public List<OrderBlotter> getSimulatedOrderBlotterByInterval() {
+        return simulatedOrderBlotterByInterval;
     }
 }

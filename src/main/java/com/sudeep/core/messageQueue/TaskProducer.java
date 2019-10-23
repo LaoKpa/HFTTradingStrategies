@@ -1,4 +1,4 @@
-package com.sudeep.core.MessageQueue;
+package com.sudeep.core.messageQueue;
 
 import com.alibaba.fastjson.JSONObject;
 import com.rabbitmq.client.Channel;
@@ -20,12 +20,12 @@ public class TaskProducer {
     private final static ConnectionFactory factory = getFactory();
     private final static Connection connection = getConnection();
 
-    public static boolean create(OrderToSend ots){
+    public static void create(OrderToSend ots){
         logger.info("[TaskProducer.create] OrderToSend: " + ots);
         JSONObject message = new JSONObject();
         message.put("body", ots);
         message.put("type", TaskConsumerCommand.CREATE);
-        return produce(message.toJSONString());
+        produce(message.toJSONString());
     }
     private static boolean produce(String message){
         logger.info(" [TaskProducer.produce] To send: " + message);

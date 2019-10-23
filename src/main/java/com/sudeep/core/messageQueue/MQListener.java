@@ -1,4 +1,4 @@
-package com.sudeep.core.MessageQueue;
+package com.sudeep.core.messageQueue;
 
 import com.rabbitmq.client.Channel;
 import com.rabbitmq.client.Connection;

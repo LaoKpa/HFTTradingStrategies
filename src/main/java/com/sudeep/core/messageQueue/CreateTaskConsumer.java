@@ -1,4 +1,4 @@
-package com.sudeep.core.MessageQueue;
+package com.sudeep.core.messageQueue;
 
 
 import com.alibaba.fastjson.JSON;
@@ -22,11 +22,11 @@ import java.util.Calendar;
 public class CreateTaskConsumer implements TaskConsumer {
     private final static Logger logger = LoggerFactory.getLogger("TaskConsumer");
 
-    private final OrderScheduler scheduler;
+    private final OrderScheduler orderScheduler;
     private final OrderTaskFactory orderTaskFactory;
 
-    public CreateTaskConsumer(BrokerService brokerService) {
-        scheduler = new OrderScheduler();
+    public CreateTaskConsumer(OrderScheduler orderScheduler, BrokerService brokerService) {
+        this.orderScheduler = orderScheduler;
         orderTaskFactory = new OrderTaskFactory(brokerService);
     }
 
@@ -51,7 +51,7 @@ public class CreateTaskConsumer implements TaskConsumer {
                 }
                 try {
                     Calendar calendar = DateUtil.stringToCalendar(orderToSend.getDatetime(), DateUtil.datetimeFormat);
-                    scheduler.schedule(orderTaskFactory.create(orderToSend, channel, delivery), calendar);
+                    orderScheduler.schedule(orderTaskFactory.create(orderToSend, channel, delivery), calendar);
                     logger.trace(String.format("[CreateTaskConsumer.consume.create. %s %s] Success", orderToSend.getOrderToSendId(), orderToSend));
                 } catch (ParseException ex) {
                     logger.error(String.format("[CreateTaskConsumer.consume.create.%s] Error", orderToSend.getOrderToSendId()), ex);
