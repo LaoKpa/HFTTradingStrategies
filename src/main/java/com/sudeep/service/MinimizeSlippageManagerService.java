@@ -35,7 +35,9 @@ public class MinimizeSlippageManagerService extends TimerTask {
 
     @Override
     public void run() {
-        updateScheduledOrdersBasedOnVolumeProfile();
+        if (schedulerOrdersByGroupId.get(groupId) != null) {
+            updateScheduledOrdersBasedOnVolumeProfile();
+        }
     }
 
     private void updateScheduledOrdersBasedOnVolumeProfile() {

@@ -33,7 +33,7 @@ public class HFTApp {
 
     public static void main(String[] args) throws InterruptedException {
         if (args.length != 1) {
-            throw new IllegalArgumentException("Input params are incorrect! Please pass processorType: TWAP/VWAP");
+            throw new IllegalArgumentException("Input params are incorrect! Please pass processorType: TWAP/VWAP/VWAPMinimizeSlippage");
         }
         log.trace("Starting HFT App!");
 
