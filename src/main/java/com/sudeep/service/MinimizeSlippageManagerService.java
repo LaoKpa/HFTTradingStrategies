@@ -59,20 +59,7 @@ public class MinimizeSlippageManagerService extends TimerTask {
 
         long percentageChange = ((todaysBlotterSum - comparisonSum) * 100) / todaysBlotterSum;
 
-        if (Math.abs(percentageChange) > 10) {
-            log.trace("Percentage greater than 10%. Re-Balance all the future orders!");
-
-            final ConcurrentHashMap<String, OrderScheduler.TaskFuturePair> taskFuturePairConcurrentHashMap = schedulerOrdersByGroupId.get(groupId);
-            taskFuturePairConcurrentHashMap.forEach((groupKey, groupValue) -> {
-                final OrderTask orderTask = groupValue.getOrderTask();
-                final ScheduledFuture scheduledFuture = groupValue.getScheduledFuture();
-                final Calendar timeToSend = orderTask.getTimeToSend();
-
-                if (timeToSend.getTime().after(simulateCurrentTime.getTime())) {
-                    log.trace("The order needs to be balanced: " + orderTask.getOrder());
-                }
-            });
-        }
+        rebalanceScheduledFutureOrdersBasedOnCurrentTrend(simulateCurrentTime, percentageChange);
     }
 
     private List<OrderBlotter> getPreviousOrderBlottersForTimeInterval() {
@@ -100,5 +87,22 @@ public class MinimizeSlippageManagerService extends TimerTask {
         final Calendar tomorrowComparisonStartTime = (Calendar) simulateCurrentTime.clone();
         tomorrowComparisonStartTime.add(Calendar.MINUTE, -intervalMinute);
         return orderBlotterDao.findOrderBlottersByInterval(tomorrowComparisonStartTime, simulateCurrentTime);
+    }
+
+    private void rebalanceScheduledFutureOrdersBasedOnCurrentTrend(Calendar simulateCurrentTime, long percentageChange) {
+        if (Math.abs(percentageChange) > 10) {
+            log.trace("Percentage greater than 10%. Re-Balance all the future orders!");
+
+            final ConcurrentHashMap<String, OrderScheduler.TaskFuturePair> taskFuturePairConcurrentHashMap = schedulerOrdersByGroupId.get(groupId);
+            taskFuturePairConcurrentHashMap.forEach((groupKey, groupValue) -> {
+                final OrderTask orderTask = groupValue.getOrderTask();
+                final ScheduledFuture scheduledFuture = groupValue.getScheduledFuture();
+                final Calendar timeToSend = orderTask.getTimeToSend();
+
+                if (timeToSend.getTime().after(simulateCurrentTime.getTime())) {
+                    log.trace("The order needs to be balanced: " + orderTask.getOrder());
+                }
+            });
+        }
     }
 }
