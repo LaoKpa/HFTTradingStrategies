@@ -59,7 +59,7 @@ public class MinimizeSlippageManagerService extends TimerTask {
 
         long percentageChange = ((todaysBlotterSum - comparisonSum) * 100) / todaysBlotterSum;
 
-        rebalanceScheduledFutureOrdersBasedOnCurrentTrend(simulateCurrentTime, percentageChange);
+        updateScheduledFutureOrdersBasedOnCurrentTrend(simulateCurrentTime, percentageChange);
     }
 
     private List<OrderBlotter> getPreviousOrderBlottersForTimeInterval() {
@@ -89,7 +89,7 @@ public class MinimizeSlippageManagerService extends TimerTask {
         return orderBlotterDao.findOrderBlottersByInterval(tomorrowComparisonStartTime, simulateCurrentTime);
     }
 
-    private void rebalanceScheduledFutureOrdersBasedOnCurrentTrend(Calendar simulateCurrentTime, long percentageChange) {
+    private void updateScheduledFutureOrdersBasedOnCurrentTrend(Calendar simulateCurrentTime, long percentageChange) {
         if (Math.abs(percentageChange) > 10) {
             log.trace("Percentage greater than 10%. Re-Balance all the future orders!");
 
