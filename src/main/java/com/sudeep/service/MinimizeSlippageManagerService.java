@@ -1,6 +1,7 @@
 package com.sudeep.service;
 
 import com.sudeep.dao.OrderBlotterDao;
+import com.sudeep.domain.Entity.Order;
 import com.sudeep.domain.Entity.OrderBlotter;
 import com.sudeep.scheduler.OrderScheduler;
 import com.sudeep.task.OrderTask;
@@ -9,11 +10,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.text.ParseException;
+import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.List;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 
 public class MinimizeSlippageManagerService extends TimerTask {
@@ -36,13 +38,13 @@ public class MinimizeSlippageManagerService extends TimerTask {
     @Override
     public void run() {
         if (schedulerOrdersByGroupId.get(groupId) != null) {
-            updateScheduledOrdersBasedOnVolumeProfile();
+            updateScheduledOrdersBasedOnCurrentTrend();
         }
     }
 
-    private void updateScheduledOrdersBasedOnVolumeProfile() {
+    private void updateScheduledOrdersBasedOnCurrentTrend() {
         if (log.isTraceEnabled()) {
-            log.trace("Re-Balance the scheduled orders based on the change of volume profile compared to the previous volume profile used to split the orders!");
+            log.trace("Update the scheduled orders based on the change of volume profile compared to the previous volume profile which was used to split the orders!");
         }
 
         final Calendar simulateCurrentTime = DateUtil.getSimulatedCurrentTimeForTomorrow();
@@ -92,19 +94,53 @@ public class MinimizeSlippageManagerService extends TimerTask {
     }
 
     private void updateScheduledFutureOrdersBasedOnCurrentTrend(Calendar simulateCurrentTime, long percentageChange) {
-        if (Math.abs(percentageChange) > 10) {
-            log.trace("Percentage greater than 10%. Re-Balance all the future orders!");
+        if (Math.abs(percentageChange) > 20) {
+            log.trace("Percentage greater than 20%. Update all the future orders to reflect the change in today's trend!");
 
-            final ConcurrentHashMap<String, OrderScheduler.TaskFuturePair> taskFuturePairConcurrentHashMap = schedulerOrdersByGroupId.get(groupId);
-            taskFuturePairConcurrentHashMap.forEach((groupKey, groupValue) -> {
-                final OrderTask orderTask = groupValue.getOrderTask();
-                final ScheduledFuture scheduledFuture = groupValue.getScheduledFuture();
-                final Calendar timeToSend = orderTask.getTimeToSend();
+            AtomicInteger sumOrderCount = new AtomicInteger();
+            final ConcurrentHashMap<String, OrderScheduler.TaskFuturePair> scheduledFutureOrdersForGroupId = schedulerOrdersByGroupId.get(groupId);
 
-                if (timeToSend.getTime().after(simulateCurrentTime.getTime())) {
-                    log.trace("The order needs to be balanced: " + orderTask.getOrder());
-                }
+            List<Order> orderList = new ArrayList<>();
+            scheduledFutureOrdersForGroupId
+                    .values()
+                    .stream()
+                    .map(OrderScheduler.TaskFuturePair::getOrderTask)
+                    .map(OrderTask::getOrder)
+                    .forEach(order -> {
+                        final int totalCount = order.getTotalCount();
+                        sumOrderCount.addAndGet(totalCount);
+                        orderList.add(order);
+                    });
+
+            List<Double> currentPercentageSplit = new ArrayList<>();
+            orderList.forEach(order -> {
+                final int totalCount = order.getTotalCount();
+                final int sumOrderCountVal = sumOrderCount.get();
+                double percentageSplit = (totalCount * 1.0) / sumOrderCountVal;
+                currentPercentageSplit.add(percentageSplit);
             });
+
+            final List<Double> doubles = updatePercentageSplit(currentPercentageSplit, simulateCurrentTime, percentageChange);
+
+            scheduledFutureOrdersForGroupId
+                    .values()
+                    .stream()
+                    .map(OrderScheduler.TaskFuturePair::getOrderTask)
+                    .forEach(orderTask -> {
+                        final Calendar timeToSend = orderTask.getTimeToSend();
+                        final Order order = orderTask.getOrder();
+
+                        if (timeToSend.getTime().after(simulateCurrentTime.getTime())) {
+                            log.trace("The order needs to be updated: " + orderTask.getOrder());
+                            log.trace("Update the order count based on new percentage split.");
+                            //order.setTotalCount();
+                        }
+                    });
         }
+    }
+
+    private List<Double> updatePercentageSplit(List<Double> currentPercentageSplit, Calendar simulateCurrentTime, long percentageChange) {
+        //ToDo - Pending implement change in currentPercentageSplit.
+        return currentPercentageSplit;
     }
 }
