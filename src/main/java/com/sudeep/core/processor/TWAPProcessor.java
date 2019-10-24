@@ -15,9 +15,7 @@ public class TWAPProcessor implements Processor {
     private final static Logger logger = LoggerFactory.getLogger("TWAPProcessor");
 
     private final int interval;
-
     private final Calendar startTime;
-
     private final Calendar endTime;
 
     public TWAPProcessor(Calendar startTime, Calendar endTime, int interval) {
